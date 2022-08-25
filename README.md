@@ -2,6 +2,7 @@
 compile starlark source file(and the modules it depends on) to a single file OR execute compile file in REPL
 
 ### WHY
+----------------------------
 Sometimes you want a single starlark file to run in your host program, you can use it
 
 ### HOW
@@ -47,6 +48,6 @@ starc2one -help
 ### INSTALLATION
 ----------------------------
 ```shell
-go install github.com/vanishs/starc2one@lastest
+go install github.com/vanishs/starc2one@latest
 ```
 

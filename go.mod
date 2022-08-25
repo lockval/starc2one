@@ -1,4 +1,4 @@
-module starc2one
+module github.com/vanishs/starc2one
 
 go 1.13
 
