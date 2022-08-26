@@ -12,7 +12,7 @@ Sometimes you want a single starlark file to run in your host program, you can u
 starc2one -file main.star -output main.sbin
 ```
 
-- execute compile file in REPL (You can understand the usage and structure of this file here) :
+- execute compile file in REPL (You can access all modules via module2exports) :
 ```shell
 starc2one -file main.sbin
 ```

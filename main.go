@@ -24,11 +24,11 @@ type entry struct {
 var (
 	cache = make(map[string]*entry)
 
-	stmts []syntax.Stmt
-
 	moduleCount = 0
 
-	module2exportsID = &syntax.Ident{Name: "module2exports"}
+	module2exportsID  = &syntax.Ident{Name: "module2exports"}
+	module2functionID = &syntax.Ident{Name: "module2function"}
+	module2function   = &syntax.DefStmt{Name: module2functionID}
 
 	argFile   = flag.String("file", "", "execute compile file in repl OR execute source file")
 	argOutput = flag.String("output", "", "compile file to output")
@@ -46,7 +46,7 @@ func addstmts(module string, sf *syntax.File) {
 
 	moduleCount++
 
-	defID := &syntax.Ident{Name: "module2function" + strconv.Itoa(moduleCount)}
+	defID := &syntax.Ident{Name: "f" + strconv.Itoa(moduleCount)}
 	def := &syntax.DefStmt{
 		Name: defID,
 		// Params: params,
@@ -114,13 +114,13 @@ func addstmts(module string, sf *syntax.File) {
 
 	}
 
-	stmts = append(stmts, def)
+	module2function.Body = append(module2function.Body, def)
 
 	es := &syntax.ExprStmt{
 		X: &syntax.CallExpr{Fn: defID},
 	}
 
-	stmts = append(stmts, es)
+	module2function.Body = append(module2function.Body, es)
 }
 
 func Load(_ *starlark.Thread, module string) (starlark.StringDict, error) {
@@ -183,12 +183,21 @@ func main() {
 
 		println("execute", *argFile, "and compile to", *argOutput)
 
+		var stmts []syntax.Stmt
+
 		module2exports := &syntax.AssignStmt{
 			Op:  syntax.EQ,
 			LHS: module2exportsID,
 			RHS: &syntax.DictExpr{},
 		}
 		stmts = append(stmts, module2exports)
+
+		stmts = append(stmts, module2function)
+
+		es := &syntax.ExprStmt{
+			X: &syntax.CallExpr{Fn: module2functionID},
+		}
+		stmts = append(stmts, es)
 
 		_, err := Load(nil, *argFile)
 		check(err)
