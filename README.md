@@ -7,24 +7,19 @@ Sometimes you want a single starlark file to run in your host program, you can u
 
 ### HOW
 ----------------------------
-- compile to a single file :
+- compile a module to a single file :
 ```shell
 starc2one -file main.star -output main.sbin
+```
+
+- compile src dir to a single file :
+```shell
+starc2one -file src -output main.sbin -suffix .star
 ```
 
 - execute compile file in REPL (You can access all modules via module2exports) :
 ```shell
 starc2one -file main.sbin
-```
-
-- package multiple modules :
-```text
-load("path/module1.star","balabala")
-load("path/module2.star","balabala")
-load("path/module3.star","balabala")
-
-save as "packages.star"
-and then compile it
 ```
 
 - load it in your golang program :

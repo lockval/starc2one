@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"go.starlark.net/lib/json"
 	"go.starlark.net/lib/math"
@@ -30,10 +32,21 @@ var (
 	module2functionID = &syntax.Ident{Name: "module2function"}
 	module2function   = &syntax.DefStmt{Name: module2functionID}
 
-	argFile   = flag.String("file", "", "execute compile file in repl OR execute source file")
-	argOutput = flag.String("output", "", "compile file to output")
+	argFile   = flag.String("file", "", "execute a compiled file in repl OR execute source file OR execute all files in the path")
+	argOutput = flag.String("output", "", "compile to output")
 	argSuffix = flag.String("suffix", "", "eg:\".star\". add suffix,will make more like module name,like this:\"path/module1\"")
 )
+
+// isDirectory determines if a file represented
+// by `path` is a directory or not
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}
 
 func init() {
 	// non-standard dialect flags
@@ -166,8 +179,10 @@ func main() {
 	flag.Parse()
 
 	if *argFile == "" {
-		log.Fatal("missing parameter -f")
+		log.Fatal("missing parameter -file")
 	}
+
+	*argFile = strings.ReplaceAll(*argFile, "\\", "/")
 
 	// Ideally this statement would update the predeclared environment.
 	// TODO(adonovan): plumb predeclared env through to the REPL.
@@ -177,8 +192,10 @@ func main() {
 
 	if *argOutput != "" {
 
+		*argOutput = strings.ReplaceAll(*argOutput, "\\", "/")
+
 		if *argOutput == *argFile {
-			log.Fatal("input and output is same")
+			log.Fatal("file and output is same")
 		}
 
 		println("execute", *argFile, "and compile to", *argOutput)
@@ -199,13 +216,50 @@ func main() {
 		}
 		stmts = append(stmts, es)
 
-		_, err := Load(nil, *argFile)
-		check(err)
+		var err error
+		isDir, _ := isDirectory(*argFile)
+		if !isDir {
+			_, err := Load(nil, *argFile)
+			check(err)
+		} else {
+			if *argSuffix == "" {
+				log.Fatal("missing parameter -suffix")
+			}
+
+			oldWP, err := os.Getwd()
+			check(err)
+			err = os.Chdir(oldWP + "/" + *argFile)
+			check(err)
+			err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+				path = strings.ReplaceAll(path, "\\", "/")
+				if !info.IsDir() && strings.HasSuffix(path, *argSuffix) {
+					module := path[:len(path)-len(*argSuffix)]
+					fmt.Println(module)
+					_, err := Load(nil, module)
+					check(err)
+				}
+				return nil
+			})
+			check(err)
+			err = os.Chdir(oldWP)
+			check(err)
+
+		}
 
 		var predeclared starlark.StringDict = nil
 		f := &syntax.File{Stmts: stmts}
 		program, err := starlark.FileProgram(f, predeclared.Has)
 		check(err)
+
+		if strings.Contains(*argOutput, "/") {
+			outputDirsFile := strings.SplitAfter(*argOutput, "/")
+			dirs := ""
+			for i := 0; i < len(outputDirsFile)-1; i++ {
+				dirs += outputDirsFile[i]
+			}
+			err = os.MkdirAll(dirs, 0600)
+			check(err)
+		}
 
 		file, err := os.OpenFile(*argOutput, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		check(err)
