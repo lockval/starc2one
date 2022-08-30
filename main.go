@@ -32,6 +32,8 @@ var (
 	module2functionID = &syntax.Ident{Name: "module2function"}
 	module2function   = &syntax.DefStmt{Name: module2functionID}
 
+	globalThis = starlark.StringDict{"globalThis": starlark.None}
+
 	argFile   = flag.String("file", "", "execute a compiled file in repl OR execute source file OR execute all files in the path")
 	argOutput = flag.String("output", "", "compile to output")
 	argSuffix = flag.String("suffix", "", "eg:\".star\". add suffix,will make more like module name,like this:\"path/module1\"")
@@ -151,7 +153,7 @@ func Load(_ *starlark.Thread, module string) (starlark.StringDict, error) {
 		// Load it.
 		thread := &starlark.Thread{Name: "exec " + module, Load: Load}
 
-		var predeclared starlark.StringDict = nil
+		var predeclared starlark.StringDict = globalThis
 		sf, program, err := starlark.SourceProgram(module+*argSuffix, nil, predeclared.Has)
 		if err != nil {
 			return nil, err
@@ -246,7 +248,7 @@ func main() {
 
 		}
 
-		var predeclared starlark.StringDict = nil
+		var predeclared starlark.StringDict = globalThis
 		f := &syntax.File{Stmts: stmts}
 		program, err := starlark.FileProgram(f, predeclared.Has)
 		check(err)

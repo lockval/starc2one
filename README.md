@@ -35,6 +35,15 @@ check(err)
 globals.Freeze()
 ```
 
+- There is a predeclared "globalThis" in starc2one. :
+```go
+predeclared["globalThis"] = &starlarkstruct.Module{Name: "testModule", Members: starlark.StringDict{"test": starlark.String("hello")}}
+globals, err := starlarkp.Init(thread, predeclared)
+```
+```python
+def test():
+    print(globalThis.test)
+```
 - more help :
 ```shell
 starc2one -help
