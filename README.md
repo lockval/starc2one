@@ -52,6 +52,6 @@ starc2one -help
 ### INSTALLATION
 ----------------------------
 ```shell
-go install github.com/vanishs/starc2one@latest
+go install github.com/lockval/starc2one@latest
 ```
 
