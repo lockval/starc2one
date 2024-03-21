@@ -13,7 +13,6 @@ import (
 	"go.starlark.net/lib/math"
 	"go.starlark.net/lib/time"
 	"go.starlark.net/repl"
-	"go.starlark.net/resolve"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
@@ -37,6 +36,8 @@ var (
 	argFile   = flag.String("file", "", "execute a compiled file in repl OR execute source file OR execute all files in the path")
 	argOutput = flag.String("output", "", "compile to output")
 	argSuffix = flag.String("suffix", "", "eg:\".star\". add suffix,will make more like module name,like this:\"path/module1\"")
+
+	myresolve syntax.FileOptions
 )
 
 // isDirectory determines if a file represented
@@ -52,9 +53,17 @@ func isDirectory(path string) (bool, error) {
 
 func init() {
 	// non-standard dialect flags
-	flag.BoolVar(&resolve.AllowSet, "set", resolve.AllowSet, "allow set data type")
-	flag.BoolVar(&resolve.AllowRecursion, "recursion", resolve.AllowRecursion, "allow while statements and recursive functions")
-	flag.BoolVar(&resolve.AllowGlobalReassign, "globalreassign", resolve.AllowGlobalReassign, "allow reassignment of globals, and if/for/while statements at top level")
+
+	//compiler
+	flag.BoolVar(&myresolve.Recursion, "recursion", myresolve.Recursion, "allow while statements and recursive functions")
+
+	//resolver
+	flag.BoolVar(&myresolve.Set, "set", myresolve.Set, "allow references to the 'set' built-in function")
+	flag.BoolVar(&myresolve.GlobalReassign, "globalreassign", myresolve.GlobalReassign, "allow reassignment to top-level names")
+
+	flag.BoolVar(&myresolve.While, "While", myresolve.While, "allow 'while' statements")
+	flag.BoolVar(&myresolve.TopLevelControl, "TopLevelControl", myresolve.TopLevelControl, "allow reassignment of globals, and if/for/while statements at top level")
+
 }
 
 func addstmts(module string, sf *syntax.File) {
@@ -249,7 +258,7 @@ func main() {
 		}
 
 		var predeclared starlark.StringDict = globalThis
-		f := &syntax.File{Stmts: stmts}
+		f := &syntax.File{Stmts: stmts, Options: &myresolve}
 		program, err := starlark.FileProgram(f, predeclared.Has)
 		check(err)
 
